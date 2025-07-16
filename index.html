@@ -439,10 +439,21 @@ modalCancelBtn.addEventListener('click', () => {
 
 deleteTaskBtn.addEventListener('click', () => {
   selectedTasks.forEach(task => {
+    // 1. グラフ上から削除
     matrix.removeChild(task);
+
+    // 2. 対応する一覧（task-list-item）も削除
+    const taskName = task.dataset.name;
+    const listItems = document.querySelectorAll('.task-list-item');
+    listItems.forEach(item => {
+      if (item.dataset.name === taskName) {
+        item.remove();
+      }
+    });
   });
+
   clearSelection();
-  updateTotalTime(); // ← 全タスク合計時間も更新
+  updateTotalTime();
 });
 
 deselectTaskBtn.addEventListener('click', clearSelection);
