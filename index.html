@@ -52,9 +52,9 @@
 
     .task {
       position: absolute;
-      width: 30%;
-      min-width: 90px;
+      width: 25%;
       max-width: 130px;
+      min-width: 70px;
       padding: 6px 10px;
       color: white;
       border-radius: 6px;
@@ -377,12 +377,25 @@ function makeDraggable(task) {
     let y = e.clientY - matrixRect.top - offsetY;
     const halfW = task.offsetWidth / 2;
     const halfH = task.offsetHeight / 2;
-    let coord = pxToCoord(x, y);
+
+    // 1. 画面内に収めるための制限
+    const maxX = matrix.clientWidth - halfW;
+    const maxY = matrix.clientHeight - halfH;
+    const minX = 0 + halfW;
+    const minY = 0 + halfH;
+
+    let clampedX = Math.min(maxX, Math.max(minX, x));
+    let clampedY = Math.min(maxY, Math.max(minY, y));
+
+    // 2. 座標のスナップ（5単位）
+    let coord = pxToCoord(clampedX, clampedY);
     coord.x = Math.round(coord.x / 5) * 5;
     coord.y = Math.round(coord.y / 5) * 5;
+
     const pos = coordToPx(coord.x, coord.y);
     task.style.left = `${pos.left - halfW}px`;
     task.style.top = `${pos.top - halfH}px`;
+
     updateTaskCoord(task);
   }
 
@@ -410,10 +423,12 @@ function createTask(name, time, color) {
   makeDraggable(task);
   matrix.appendChild(task);
   const px = coordToPx(0, 0);
-  task.style.left = `${px.left - 65}px`;
-  task.style.top = `${px.top - 20}px`;
+  const halfW = task.offsetWidth / 2;
+  const halfH = task.offsetHeight / 2;
+  task.style.left = `${px.left - halfW}px`;
+  task.style.top = `${px.top - halfH}px`;  
+  
   updateTaskCoord(task);
-
   updateTaskListOrder();
   updateTotalTime(); // ← 全タスク合計時間も更新
 }
