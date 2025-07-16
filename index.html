@@ -129,6 +129,7 @@
   <button id="addTaskBtn">タスク追加</button>
   <button id="deleteTaskBtn" disabled>選択タスク削除</button>
   <button id="deselectTaskBtn" disabled>選択解除</button>
+  <button onclick="localStorage.removeItem('eisenhower_tasks'); location.reload();">全データリセット</button>
 </div>
 
 <div id="totalTime" style="font-weight:bold; margin-bottom:10px;">
@@ -470,6 +471,73 @@ matrix.addEventListener('click', clearSelection);
 document.addEventListener("DOMContentLoaded", () => {
   drawAxes();
   modal.style.display = 'none';
+});
+
+
+const STORAGE_KEY = "eisenhower_tasks";
+
+// タスク一覧をlocalStorageに保存
+function saveTasksToLocalStorage() {
+  const allTasks = Array.from(document.querySelectorAll('.task')).map(task => ({
+    name: task.dataset.name,
+    time: parseInt(task.dataset.time),
+    color: task.style.backgroundColor,
+    x: parseInt(task.dataset.x),
+    y: parseInt(task.dataset.y)
+  }));
+
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(allTasks));
+}
+
+// localStorageからタスク一覧を復元
+function loadTasksFromLocalStorage() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (!saved) return;
+
+  try {
+    const tasks = JSON.parse(saved);
+    tasks.forEach(t => {
+      const task = document.createElement('div');
+      task.className = 'task';
+      task.dataset.name = t.name;
+      task.dataset.time = t.time;
+      task.dataset.x = t.x;
+      task.dataset.y = t.y;
+      task.style.backgroundColor = t.color;
+
+      task.addEventListener('click', e => {
+        e.stopPropagation();
+        selectTask(task);
+      });
+
+      makeDraggable(task);
+      matrix.appendChild(task);
+
+      const px = coordToPx(t.x, t.y);
+      const halfW = 65; // 幅の半分 (見た目に応じて調整)
+      const halfH = 20;
+      task.style.left = `${px.left - halfW}px`;
+      task.style.top = `${px.top - halfH}px`;
+
+      task.textContent = `${t.name}（${t.time}時間）`;
+    });
+
+    updateTaskListOrder();
+    updateTotalTime();
+  } catch (e) {
+    console.error("データの読み込みに失敗しました", e);
+  }
+}
+
+// すべてのタスク操作後に保存
+const observer = new MutationObserver(() => {
+  saveTasksToLocalStorage();
+});
+observer.observe(matrix, { childList: true, subtree: true });
+
+window.addEventListener("beforeunload", saveTasksToLocalStorage);
+window.addEventListener("DOMContentLoaded", () => {
+  loadTasksFromLocalStorage();
 });
 
 </script>
