@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"> 
   <title>アイゼンハワーマトリクス</title>
   <style>
     body {
@@ -96,7 +96,7 @@
     }
     @media (max-width: 480px) {
       h1 {
-        font-size: 20px;
+       font-size: 20px;
       }
 
       #controls {
@@ -108,7 +108,17 @@
         width: 100%;
         font-size: 16px;
       }
+
+      .task {
+        width: 24%;
+        min-width: 70px;
+        max-width: 100px;
+        font-size: 11px;
+        padding: 4px 6px;
+      }
     }
+
+
   </style>
 </head>
 <body>
@@ -152,7 +162,7 @@
 </div>
 
 <script>
-const MATRIX_SIZE = Math.min(window.innerWidth, 600);
+const MATRIX_SIZE = Math.min(window.innerWidth, window.innerHeight, 600);
 const COORD_MIN = 0;
 const COORD_MAX = 100;
 const UNIT_PX = MATRIX_SIZE / COORD_MAX;
