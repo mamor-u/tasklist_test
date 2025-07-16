@@ -52,9 +52,9 @@
 
     .task {
       position: absolute;
-      width: 22vw;
+      width: 30%;
+      min-width: 90px;
       max-width: 130px;
-      min-width: 60px;
       padding: 6px 10px;
       color: white;
       border-radius: 6px;
@@ -373,26 +373,16 @@ function makeDraggable(task) {
 
   function onPointerMove(e) {
     const matrixRect = matrix.getBoundingClientRect();
-    const halfW = task.offsetWidth / 2;
-    const halfH = task.offsetHeight / 2;
-
-    // マウス座標からタスク中心位置を計算
     let x = e.clientX - matrixRect.left - offsetX;
     let y = e.clientY - matrixRect.top - offsetY;
-
-    // 枠外に出ないように制限
-    x = Math.max(halfW, Math.min(matrix.clientWidth - halfW, x));
-    y = Math.max(halfH, Math.min(matrix.clientHeight - halfH, y));
-
-    // 座標をスナップ
-    const coord = pxToCoord(x, y);
+    const halfW = task.offsetWidth / 2;
+    const halfH = task.offsetHeight / 2;
+    let coord = pxToCoord(x, y);
     coord.x = Math.round(coord.x / 5) * 5;
     coord.y = Math.round(coord.y / 5) * 5;
-
     const pos = coordToPx(coord.x, coord.y);
     task.style.left = `${pos.left - halfW}px`;
     task.style.top = `${pos.top - halfH}px`;
-
     updateTaskCoord(task);
   }
 
@@ -419,13 +409,11 @@ function createTask(name, time, color) {
 
   makeDraggable(task);
   matrix.appendChild(task);
-  const px = coordToPx(50, 50);
-  const halfW = task.offsetWidth / 2;
-  const halfH = task.offsetHeight / 2;
-  task.style.left = `${px.left - halfW}px`;
-  task.style.top = `${px.top - halfH}px`;  
-  
+  const px = coordToPx(0, 0);
+  task.style.left = `${px.left - 65}px`;
+  task.style.top = `${px.top - 20}px`;
   updateTaskCoord(task);
+
   updateTaskListOrder();
   updateTotalTime(); // ← 全タスク合計時間も更新
 }
