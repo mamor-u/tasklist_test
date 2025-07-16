@@ -124,7 +124,6 @@
 <body>
 
 <h1>アイゼンハワーマトリクス</h1>
-<div id="coords">座標: （－）</div>
 
 <div id="controls">
   <button id="addTaskBtn">タスク追加</button>
@@ -170,7 +169,6 @@ const UNIT_PX = MATRIX_SIZE / COORD_MAX;
 const matrix = document.getElementById('matrix-container');
 const axisCanvas = document.getElementById('axisCanvas');
 const ctx = axisCanvas.getContext('2d');
-const coordsLabel = document.getElementById('coords');
 const addTaskBtn = document.getElementById('addTaskBtn');
 const deleteTaskBtn = document.getElementById('deleteTaskBtn');
 const deselectTaskBtn = document.getElementById('deselectTaskBtn');
