@@ -52,9 +52,9 @@
 
     .task {
       position: absolute;
-      width: 25%;
+      width: 22vw;
       max-width: 130px;
-      min-width: 70px;
+      min-width: 60px;
       padding: 6px 10px;
       color: white;
       border-radius: 6px;
@@ -373,22 +373,19 @@ function makeDraggable(task) {
 
   function onPointerMove(e) {
     const matrixRect = matrix.getBoundingClientRect();
-    let x = e.clientX - matrixRect.left - offsetX;
-    let y = e.clientY - matrixRect.top - offsetY;
     const halfW = task.offsetWidth / 2;
     const halfH = task.offsetHeight / 2;
 
-    // 1. 画面内に収めるための制限
-    const maxX = matrix.clientWidth - halfW;
-    const maxY = matrix.clientHeight - halfH;
-    const minX = 0 + halfW;
-    const minY = 0 + halfH;
+    // マウス座標からタスク中心位置を計算
+    let x = e.clientX - matrixRect.left - offsetX;
+    let y = e.clientY - matrixRect.top - offsetY;
 
-    let clampedX = Math.min(maxX, Math.max(minX, x));
-    let clampedY = Math.min(maxY, Math.max(minY, y));
+    // 枠外に出ないように制限
+    x = Math.max(halfW, Math.min(matrix.clientWidth - halfW, x));
+    y = Math.max(halfH, Math.min(matrix.clientHeight - halfH, y));
 
-    // 2. 座標のスナップ（5単位）
-    let coord = pxToCoord(clampedX, clampedY);
+    // 座標をスナップ
+    const coord = pxToCoord(x, y);
     coord.x = Math.round(coord.x / 5) * 5;
     coord.y = Math.round(coord.y / 5) * 5;
 
@@ -422,7 +419,7 @@ function createTask(name, time, color) {
 
   makeDraggable(task);
   matrix.appendChild(task);
-  const px = coordToPx(0, 0);
+  const px = coordToPx(50, 50);
   const halfW = task.offsetWidth / 2;
   const halfH = task.offsetHeight / 2;
   task.style.left = `${px.left - halfW}px`;
