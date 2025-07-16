@@ -129,7 +129,7 @@
   <button id="addTaskBtn">タスク追加</button>
   <button id="deleteTaskBtn" disabled>選択タスク削除</button>
   <button id="deselectTaskBtn" disabled>選択解除</button>
-  <button onclick="localStorage.removeItem('eisenhower_tasks'); location.reload();">全データリセット</button>
+  <button id="resetBtn">全データリセット</button>
 </div>
 
 <div id="totalTime" style="font-weight:bold; margin-bottom:10px;">
@@ -528,6 +528,13 @@ function loadTasksFromLocalStorage() {
     console.error("データの読み込みに失敗しました", e);
   }
 }
+
+//データリセット
+function clearAllData() {
+  localStorage.removeItem('eisenhower_tasks');
+  location.reload();
+}
+document.getElementById('resetBtn').addEventListener('click', clearAllData);
 
 // すべてのタスク操作後に保存
 const observer = new MutationObserver(() => {
