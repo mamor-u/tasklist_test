@@ -409,7 +409,7 @@ function createTask(name, time, color) {
 
   makeDraggable(task);
   matrix.appendChild(task);
-  const px = coordToPx(0, 0);
+  const px = coordToPx(50, 50);
   task.style.left = `${px.left - 65}px`;
   task.style.top = `${px.top - 20}px`;
   updateTaskCoord(task);
