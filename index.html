@@ -574,11 +574,12 @@
             isDragging = true;
             task.setPointerCapture(pointerId);
     
-            // 要素中心からの差分を計算
+            // 中心をつかむ
             const rect = task.getBoundingClientRect();
-            offsetX = e.clientX - (rect.left + rect.width/2);
-            offsetY = e.clientY - (rect.top + rect.height/2);
+            offsetX = 0;
+            offsetY = 0;
             task.style.cursor = 'grabbing';
+            requestAnimationFrame(() => onPointerMove(e));
           }
     
           function onPointerMove(e) {
@@ -791,6 +792,7 @@
       </script>
     </body>
 </html>
+
 
 
 
