@@ -547,14 +547,16 @@
           const px = coordToPx(x, y);
           
           requestAnimationFrame(() => {
-            const halfW = task.offsetWidth / 2;
-            const halfH = task.offsetHeight / 2;
-            task.style.left = (px.left - halfW) + 'px';
-            task.style.top = (px.top - halfH) + 'px';
-            updateTaskCoord(task);
-            updateTaskListOrder(getOrderFromLocalStorage());
-            updateTotalTime();
-            saveTasksToLocalStorage();
+            requestAnimationFrame(() => {
+              const halfW = task.offsetWidth / 2;
+              const halfH = task.offsetHeight / 2;
+              task.style.left = (px.left - halfW) + 'px';
+              task.style.top = (px.top - halfH) + 'px';
+              updateTaskCoord(task);
+              updateTaskListOrder(getOrderFromLocalStorage());
+              updateTotalTime();
+              saveTasksToLocalStorage();
+            });
           });
         }
     
@@ -744,7 +746,10 @@
           const diff = daysBetween(last, today);
           if (diff <= 0) return;
           const inc = 2 * diff;
-          document.querySelectorAll('.task').forEach(task => {
+          setCanvasSize();
+          const tasks = document.querySelectorAll('.task');
+          if (tasks.length === 0) return;
+          tasks.forEach(task => {
             const x = parseInt(task.dataset.x||50,10);
             let y = parseInt(task.dataset.y||50,10);
             y = Math.min(COORD_MAX, y + inc);
@@ -788,6 +793,22 @@
       </script>
     </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
