@@ -1,182 +1,240 @@
 <!DOCTYPE html>
 <html lang="ja">
- <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>タスク管理アプリ</title>
-  <style>
-    /* ===== ベース（PC: 横並び、スマホ: 縦並び） ===== */
-    :root{
-      --max-matrix: 600px;
-      --gap: 10px;
-    }
-    html, body {
-      height: 100%;
-      margin: 0;
-      -webkit-tap-highlight-color: transparent;
-      /* body の縦スクロールは許可 */
-    }
-    body {
-      font-family: Arial, sans-serif;
-      box-sizing: border-box;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: var(--gap);
-      align-items: center;
-      background: #fff;
-      color: #111;
-    }
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>タスク管理アプリ</title>
+    <style>
+        /* ===== ベース（PC: 横並び、スマホ: 縦並び） ===== */
+        :root {
+            --max-matrix: 600px;
+            --gap: 10px;
+        }
 
-    .controls {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      justify-content: center;
-      width: 100%;
-      max-width: 1100px;
-    }
-    button {
-      padding: 10px 14px;
-      font-size: 15px;
-      cursor: pointer;
-      border-radius: 6px;
-      border: 1px solid rgba(0,0,0,0.08);
-      background: #f2f2f2;
-    }
-    button:disabled { opacity: 0.5; cursor: default; }
+        html, body {
+            height: 100%;
+            margin: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-    /* レイアウト本体 */
-    #main {
-      display: flex;
-      width: 100%;
-      max-width: 1100px;
-      gap: 16px;
-      align-items: stretch;
-      justify-content: center;
-    }
+        body {
+            font-family: Arial, sans-serif;
+            box-sizing: border-box;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: var(--gap);
+            align-items: center;
+            background: #fff;
+            color: #111;
+        }
 
-    /* キャンバス領域（比率に合わせて可変） */
-    #matrix-container {
-      position: relative;
-      width: 100%;
-      max-width: 600px;
-      aspect-ratio: 1 / 1;  /* 正方形維持 */
-      box-sizing: border-box; /* 枠線も aspect-ratio に含める */
-      border: 2px solid #333;
-      background: #f9f9f9;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-width: 260px;
-      overflow: visible; /* タスクがはみ出すことを許可 */
-    }
-    /* Canvas は容器いっぱいに */
-    #axisCanvas {
-      position: absolute;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      display: block;
-      z-index: 0;
-      touch-action: none; /* タッチでの既定のスクロールを防ぐ（詳細はJS制御） */
-    }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            width: 100%;
+            max-width: 1100px;
+        }
 
-    /* タスク（レスポンシブ）: 幅はマトリクスに合わせて自動調整 */
-    .task {
-      position: absolute;
-      /* 幅はマトリクス幅に対して相対的に（最小と最大でクランプ） */
-      width: clamp(80px, 22%, 130px);
-      padding: 6px 10px;
-      color: white;
-      border-radius: 6px;
-      cursor: grab;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-      z-index: 10;
-      font-size: clamp(12px, 1.6vw, 14px);
-      text-align: center;
-      user-select: none;
-      touch-action: none; /* タッチ時にブラウザのパンを許可しない（JSで制御） */
-    }
-    .task.selected { outline: 3px solid red; }
+        button {
+            padding: 10px 14px;
+            font-size: 15px;
+            cursor: pointer;
+            border-radius: 6px;
+            border: 1px solid rgba(0,0,0,0.08);
+            background: #f2f2f2;
+        }
 
-    /* 右側リスト */
-    #list {
-      flex: 0 0 380px;
-      max-width: 420px;
-      min-width: 220px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
+            button:disabled {
+                opacity: 0.5;
+                cursor: default;
+            }
 
-    #totalTime, #selectedTime {
-      font-weight: bold;
-    }
+        /* レイアウト本体 */
+        #main {
+            display: flex;
+            width: 100%;
+            max-width: 1100px;
+            gap: 16px;
+            align-items: stretch;
+            justify-content: center;
+        }
 
-    /* タスク一覧 */
-    #taskList, #completedTaskList {
-      flex: 1;
-      min-height: 120px;
-      border-top: 1px solid #ddd;
-      padding-top: 8px;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-      display: block;
-      gap: 8px;
-    }
-    .task-list-item {
-      padding: 8px 10px;
-      border-radius: 6px;
-      color: #fff;
-      font-weight: bold;
-      font-size: 13px;
-      cursor: grab;
-      user-select: none;
-      margin-bottom: 8px;
-    }
-    .task-list-item.selected { outline: 2px solid red; }
+        /* キャンバス領域（比率に合わせて可変） */
+        #matrix-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            aspect-ratio: 1 / 1; /* 正方形維持 */
+            box-sizing: border-box;
+            border: 2px solid #333;
+            background: #f9f9f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-width: 260px;
+            overflow: visible; /* タスクがはみ出すことを許可 */
+        }
+        /* Canvas */
+        #axisCanvas {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+            z-index: 0;
+            touch-action: none;
+        }
 
-    .completed-item { background: #666; color: #fff; padding: 6px 10px; border-radius: 6px; margin-bottom: 8px; }
+        /* タスク（レスポンシブ）: 幅はマトリクスに合わせて自動調整 */
+        .task {
+            position: absolute;
+            width: clamp(80px, 22%, 130px);
+            padding: 6px 10px;
+            color: white;
+            border-radius: 6px;
+            cursor: grab;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            z-index: 10;
+            font-size: clamp(12px, 1.6vw, 14px);
+            text-align: center;
+            user-select: none;
+            touch-action: none;
+        }
 
-    /* スクロールバー */
-    #taskList::-webkit-scrollbar, #completedTaskList::-webkit-scrollbar { width: 7px; }
-    #taskList::-webkit-scrollbar-thumb, #completedTaskList::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.18); border-radius: 4px; }
+            .task.selected {
+                outline: 3px solid red;
+            }
 
-    /* 補助: モーダル中央 */
-    #taskModal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; z-index:2000; }
-    #taskModal .box { background:white; padding:20px; border-radius:8px; width:320px; max-width:95%; }
+        /* 右側リスト */
+        #list {
+            flex: 0 0 380px;
+            max-width: 420px;
+            min-width: 220px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
 
-    /* ===== スマホ用（縦並び） ===== */
-    @media (max-width: 768px) {
-      #main { flex-direction: column; align-items: center; }
-      #matrix-container { width: 95%; max-width: 95%; aspect-ratio: 1/1; }
-      #list { width: 95%; max-width: 95%; }
-      .controls { gap: 6px; }
-      button { font-size: 14px; padding: 8px 10px; }
-    }
-  </style>
- </head>
-    <body>
-      <div class="controls" id="controls-top">
+        #totalTime, #selectedTime {
+            font-weight: bold;
+        }
+
+        /* タスク一覧 */
+        #taskList, #completedTaskList {
+            flex: 1;
+            min-height: 120px;
+            border-top: 1px solid #ddd;
+            padding-top: 8px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            display: block;
+            gap: 8px;
+        }
+
+        .task-list-item {
+            padding: 8px 10px;
+            border-radius: 6px;
+            color: #fff;
+            font-weight: bold;
+            font-size: 13px;
+            cursor: grab;
+            user-select: none;
+            margin-bottom: 8px;
+        }
+
+            .task-list-item.selected {
+                outline: 2px solid red;
+            }
+
+        .completed-item {
+            background: #666;
+            color: #fff;
+            padding: 6px 10px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+
+        /* スクロールバー */
+        #taskList::-webkit-scrollbar, #completedTaskList::-webkit-scrollbar {
+            width: 7px;
+        }
+
+        #taskList::-webkit-scrollbar-thumb, #completedTaskList::-webkit-scrollbar-thumb {
+            background: rgba(0,0,0,0.18);
+            border-radius: 4px;
+        }
+
+        /* 補助: モーダル中央 */
+        #taskModal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+            #taskModal .box {
+                background: white;
+                padding: 20px;
+                border-radius: 8px;
+                width: 320px;
+                max-width: 95%;
+            }
+
+        /* ===== スマホ用（縦並び） ===== */
+        @media (max-width: 768px) {
+            #main {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            #matrix-container {
+                width: 95%;
+                max-width: 95%;
+                aspect-ratio: 1/1;
+            }
+
+            #list {
+                width: 95%;
+                max-width: 95%;
+            }
+
+            .controls {
+                gap: 6px;
+            }
+
+            button {
+                font-size: 14px;
+                padding: 8px 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="controls" id="controls-top">
         <button id="addTaskBtn">タスク追加</button>
         <button id="editTaskBtn" disabled>編集</button>
         <button id="deselectTaskBtn" disabled>選択解除</button>
         <button id="deleteTaskBtn" disabled>削除</button>
-      </div>
-    
-      <!-- メイン -->
-      <div id="main">
+    </div>
+
+    <!-- メイン -->
+    <div id="main">
         <!-- キャンバス領域 -->
         <div id="matrix-container">
-          <canvas id="axisCanvas" width="600" height="600" aria-label="重要度・緊急度マトリクス"></canvas>
+            <canvas id="axisCanvas" width="600" height="600" aria-label="重要度・緊急度マトリクス"></canvas>
         </div>
-    
+
         <!-- 右側リスト領域 -->
         <div id="list">
-          <div id="totalTime">全タスクの合計時間: 0時間0分</div>
-          <div id="selectedTime">選択タスクの合計時間: 0時間0分</div>
+            <div id="totalTime">全タスクの合計時間: 0時間0分</div>
+            <div id="selectedTime">選択タスクの合計時間: 0時間0分</div>
 
             <!-- 下部コントロール -->
             <div class="controls" id="controls-bottom">
@@ -185,30 +243,31 @@
                 <button id="recommendBtn">おすすめ優先順位</button>
             </div>
 
-          <div id="taskList" aria-live="polite"></div>
-          <div id="completedTaskList" style="display:none;"></div>
+            <div id="taskList" aria-live="polite"></div>
+            <div id="completedTaskList" style="display:none;"></div>
         </div>
-      </div>
-    
-    
-      <!-- タスク追加モーダル -->
-      <div id="taskModal" role="dialog" aria-modal="true">
+    </div>
+
+
+    <!-- タスク追加モーダル -->
+    <div id="taskModal" role="dialog" aria-modal="true">
         <div class="box">
-          <h3 id="modalTitle">タスク追加</h3>
-          <label>タスク名:<br><input type="text" id="modalTaskName" style="width:100%;"></label><br><br>
-          <label>作業時間:<br>
-            <input type="number" id="modalTaskHours" min="0" value="0" style="width:60px;"> 時間
-            <input type="number" id="modalTaskMinutes" min="0" max="59" value="0" style="width:60px;"> 分
-          </label><br><br>
-          <label>期限:<br><input type="date" id="modalTaskDeadline" style="width:100%;"></label><br><br>
-          <label>色を選択:<br><input type="color" id="modalTaskColor" value="#4a90e2"></label><br><br>
-          <div style="text-align:right;">
-            <button id="modalCancelBtn">キャンセル</button>
-            <button id="modalAddBtn">追加</button>
-          </div>
+            <h3 id="modalTitle">タスク追加</h3>
+            <label>タスク名:<br><input type="text" id="modalTaskName" style="width:100%;"></label><br><br>
+            <label>
+                作業時間:<br>
+                <input type="number" id="modalTaskHours" min="0" value="0" style="width:60px;"> 時間
+                <input type="number" id="modalTaskMinutes" min="0" max="59" value="0" style="width:60px;"> 分
+            </label><br><br>
+            <label>期限:<br><input type="date" id="modalTaskDeadline" style="width:100%;"></label><br><br>
+            <label>色を選択:<br><input type="color" id="modalTaskColor" value="#4a90e2"></label><br><br>
+            <div style="text-align:right;">
+                <button id="modalCancelBtn">キャンセル</button>
+                <button id="modalAddBtn">追加</button>
+            </div>
         </div>
-      </div>
-      <script>
+    </div>
+    <script>
         /* ======== 定数と初期要素 ======== */
         const matrix = document.getElementById('matrix-container');
         const axisCanvas = document.getElementById('axisCanvas');
@@ -233,12 +292,12 @@
         const modalCancelBtn = document.getElementById('modalCancelBtn');
         const totalTimeEl = document.getElementById('totalTime');
         const selectedTimeEl = document.getElementById('selectedTime');
-    
+
         const STORAGE_KEY = 'eisenhower_tasks';
         const ORDER_KEY = 'eisenhower_tasks_order';
         const SHIFT_KEY = 'eisenhower_last_shift_date';
         const COMPLETED_KEY = 'eisenhower_completed_tasks';
-    
+
         let selectedTasks = new Set();
         let editTarget = null;
         let isDragging = false;        // ドラッグ中（スクロール防止）
@@ -247,36 +306,36 @@
         const COORD_MIN = 0;
         const COORD_MAX = 100;
         let UNIT_PX = 1;
-    
+
         /* ====== 時間、分単位の制御 ====== */
         function generateId() { return 't_' + Math.random().toString(36).slice(2) + Date.now().toString(36); }
         function todayStr() {
-          const d = new Date();
-          const y = d.getFullYear();
-          const m = String(d.getMonth() + 1).padStart(2, '0');
-          const day = String(d.getDate()).padStart(2, '0');
-          return `${y}-${m}-${day}`;
+            const d = new Date();
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
         }
         function daysBetween(d1Str, d2Str) {
-          const d1 = new Date(d1Str + 'T00:00:00');
-          const d2 = new Date(d2Str + 'T00:00:00');
-          return Math.floor((d2 - d1) / (1000 * 60 * 60 * 24));
+            const d1 = new Date(d1Str + 'T00:00:00');
+            const d2 = new Date(d2Str + 'T00:00:00');
+            return Math.floor((d2 - d1) / (1000 * 60 * 60 * 24));
         }
         function formatTime(minutes) {
-          const h = Math.floor(minutes / 60);
-          const m = minutes % 60;
-          return `${h}時間${m}分`;
+            const h = Math.floor(minutes / 60);
+            const m = minutes % 60;
+            return `${h}時間${m}分`;
         }
         function rgbToHex(rgb) {
-          if (!rgb) return null;
-          if (rgb[0] === '#') return rgb;
-          const nums = rgb.match(/\d+/g);
-          if (!nums || nums.length < 3) return null;
-          const [r,g,b] = nums.map(n => parseInt(n,10));
-          const toHex = n => n.toString(16).padStart(2,'0');
-          return '#' + toHex(r) + toHex(g) + toHex(b);
+            if (!rgb) return null;
+            if (rgb[0] === '#') return rgb;
+            const nums = rgb.match(/\d+/g);
+            if (!nums || nums.length < 3) return null;
+            const [r, g, b] = nums.map(n => parseInt(n, 10));
+            const toHex = n => n.toString(16).padStart(2, '0');
+            return '#' + toHex(r) + toHex(g) + toHex(b);
         }
-    
+
         /* ====== レスポンシブ：キャンバスリサイズと単位再計算 ====== */
         function setCanvasSize() {
             // 修正版: 正方形を保証し、スマホでも高さが暴れないようにする
@@ -305,494 +364,488 @@
 
             // --- 既存タスク再配置 ---
             document.querySelectorAll('.task').forEach(task => {
-                const x = parseFloat(task.dataset.x) || 50;
-                const y = parseFloat(task.dataset.y) || 50;
+                const x = parseFloat(task.dataset.x);
+                const y = parseFloat(task.dataset.y);
                 const px = coordToPx(x, y);
-                const halfW = Math.max(1, task.offsetWidth) / 2;
-                const halfH = Math.max(1, task.offsetHeight) / 2;
+                const halfW = task.offsetWidth / 2;
+                const halfH = task.offsetHeight / 2;
                 task.style.left = (px.left - halfW) + 'px';
                 task.style.top = (px.top - halfH) + 'px';
             });
         }
-    
+
         function coordToPx(x, y) {
-          const left = x * UNIT_PX;
-          const top = MATRIX_SIZE - y * UNIT_PX;
-          return { left, top };
+            const left = x * UNIT_PX;
+            const top = MATRIX_SIZE - y * UNIT_PX;
+            return { left, top };
         }
         function pxToCoord(pxX, pxY) {
-          const x = Math.round(pxX / UNIT_PX);
-          const y = Math.round((MATRIX_SIZE - pxY) / UNIT_PX);
-          return { x: Math.max(COORD_MIN, Math.min(COORD_MAX, x)), y: Math.max(COORD_MIN, Math.min(COORD_MAX, y)) };
+            const x = Math.round(pxX / UNIT_PX);
+            const y = Math.round((MATRIX_SIZE - pxY) / UNIT_PX);
+            return { x: Math.max(COORD_MIN, Math.min(COORD_MAX, x)), y: Math.max(COORD_MIN, Math.min(COORD_MAX, y)) };
         }
-    
+
         /* ====== 軸描画 ====== */
         function drawAxes() {
-          ctx.clearRect(0,0, axisCanvas.width, axisCanvas.height);
-          ctx.strokeStyle = "rgba(51,51,51,0.6)";
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.moveTo(0, MATRIX_SIZE / 2);
-          ctx.lineTo(MATRIX_SIZE, MATRIX_SIZE / 2);
-          ctx.moveTo(MATRIX_SIZE / 2, 0);
-          ctx.lineTo(MATRIX_SIZE / 2, MATRIX_SIZE);
-          ctx.stroke();
-    
-          ctx.font = "bold 18px sans-serif";
-          ctx.fillStyle = "rgba(0,0,0,0.6)";
-          ctx.textAlign = "center";
-          ctx.textBaseline = "top";
-          ctx.fillText("緊急度", MATRIX_SIZE / 2 + 45, 10);
-          ctx.fillText("重要度", MATRIX_SIZE - 60, MATRIX_SIZE / 2 - 35);
-    
-          ctx.font = "bold 15px sans-serif";
-          ctx.fillStyle = "rgba(0,0,0,0.45)";
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.fillText("高", MATRIX_SIZE / 2 - 25, 25);
-          ctx.fillText("低", MATRIX_SIZE / 2 - 25, MATRIX_SIZE - 25);
-          ctx.fillText("低", 25, MATRIX_SIZE / 2 + 25);
-          ctx.fillText("高", MATRIX_SIZE - 25, MATRIX_SIZE / 2 + 25);
+            ctx.clearRect(0, 0, axisCanvas.width, axisCanvas.height);
+            ctx.strokeStyle = "rgba(51,51,51,0.6)";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, MATRIX_SIZE / 2);
+            ctx.lineTo(MATRIX_SIZE, MATRIX_SIZE / 2);
+            ctx.moveTo(MATRIX_SIZE / 2, 0);
+            ctx.lineTo(MATRIX_SIZE / 2, MATRIX_SIZE);
+            ctx.stroke();
+
+            ctx.font = "bold 18px sans-serif";
+            ctx.fillStyle = "rgba(0,0,0,0.6)";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "top";
+            ctx.fillText("緊急度", MATRIX_SIZE / 2 + 45, 10);
+            ctx.fillText("重要度", MATRIX_SIZE - 60, MATRIX_SIZE / 2 - 35);
+
+            ctx.font = "bold 15px sans-serif";
+            ctx.fillStyle = "rgba(0,0,0,0.45)";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText("高", MATRIX_SIZE / 2 - 25, 25);
+            ctx.fillText("低", MATRIX_SIZE / 2 - 25, MATRIX_SIZE - 25);
+            ctx.fillText("低", 25, MATRIX_SIZE / 2 + 25);
+            ctx.fillText("高", MATRIX_SIZE - 25, MATRIX_SIZE / 2 + 25);
         }
-    
+
         /* ====== タスクラベル（中身） ====== */
         function labelText(task) {
-          const minutes = parseInt(task.dataset.time, 10) || 0;
-          let t = `${task.dataset.name}（${formatTime(minutes)}）`;
-          if (task.dataset.deadline) t += `\n期限:${task.dataset.deadline}`;
-          return t;
+            const minutes = parseInt(task.dataset.time, 10) || 0;
+            let t = `${task.dataset.name}（${formatTime(minutes)}）`;
+            if (task.dataset.deadline) t += `\n期限:${task.dataset.deadline}`;
+            return t;
         }
-    
+
         /* ====== UI: 時間表示更新 ====== */
         function updateSelectedTime() {
-          let total = 0;
-          selectedTasks.forEach(task => { total += parseInt(task.dataset.time || 0, 10); });
-          selectedTimeEl.textContent = `選択タスクの合計時間: ${formatTime(total)}`;
+            let total = 0;
+            selectedTasks.forEach(task => { total += parseInt(task.dataset.time || 0, 10); });
+            selectedTimeEl.textContent = `選択タスクの合計時間: ${formatTime(total)}`;
         }
         function updateTotalTime() {
-          let total = 0;
-          document.querySelectorAll('.task').forEach(task => total += parseInt(task.dataset.time || 0, 10));
-          totalTimeEl.textContent = `全タスクの合計時間: ${formatTime(total)}`;
+            let total = 0;
+            document.querySelectorAll('.task').forEach(task => total += parseInt(task.dataset.time || 0, 10));
+            totalTimeEl.textContent = `全タスクの合計時間: ${formatTime(total)}`;
         }
-    
+
         /* ====== 保存/復元 ====== */
         function saveTasksToLocalStorage() {
-          const all = Array.from(document.querySelectorAll('.task')).map(t => ({
-            id: t.dataset.id,
-            name: t.dataset.name,
-            time: parseInt(t.dataset.time || 0, 10),
-            color: rgbToHex(t.style.backgroundColor),
-            x: parseInt(t.dataset.x || 50, 10),
-            y: parseInt(t.dataset.y || 50, 10),
-            deadline: t.dataset.deadline || ''
-          }));
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+            const all = Array.from(document.querySelectorAll('.task')).map(t => ({
+                id: t.dataset.id,
+                name: t.dataset.name,
+                time: parseInt(t.dataset.time || 0, 10),
+                color: rgbToHex(t.style.backgroundColor),
+                x: parseInt(t.dataset.x || 50, 10),
+                y: parseInt(t.dataset.y || 50, 10),
+                deadline: t.dataset.deadline || ''
+            }));
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
         }
         function loadTasksFromLocalStorage() {
-          const raw = localStorage.getItem(STORAGE_KEY);
-          if (!raw) return;
-          try {
-            const arr = JSON.parse(raw);
-            if (!Array.isArray(arr)) return;
-            arr.forEach(t => {
-              createTask(t.name, parseInt(t.time||0,10), t.color||'#4a90e2', t.deadline || '', parseInt(t.x||50,10), parseInt(t.y||50,10), t.id);
-            });
-            updateTaskListOrder(getOrderFromLocalStorage());
-            updateTotalTime();
-          } catch(e) { console.error(e); }
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (!raw) return;
+            try {
+                const arr = JSON.parse(raw);
+                if (!Array.isArray(arr)) return;
+                arr.forEach(t => {
+                    createTask(t.name, parseInt(t.time || 0, 10), t.color || '#4a90e2', t.deadline || '', parseInt(t.x || 50, 10), parseInt(t.y || 50, 10), t.id);
+                });
+                updateTaskListOrder(getOrderFromLocalStorage());
+                updateTotalTime();
+            } catch (e) { console.error(e); }
         }
-    
+
         function saveOrderToLocalStorage(orderIds) { localStorage.setItem(ORDER_KEY, JSON.stringify(orderIds)); }
         function getOrderFromLocalStorage() {
-          const raw = localStorage.getItem(ORDER_KEY);
-          if (!raw) return null;
-          try { return JSON.parse(raw); } catch { return null; }
+            const raw = localStorage.getItem(ORDER_KEY);
+            if (!raw) return null;
+            try { return JSON.parse(raw); } catch { return null; }
         }
-    
+
         /* ====== 完了タスク周り ====== */
         function saveCompletedTask(task) {
-          const list = JSON.parse(localStorage.getItem(COMPLETED_KEY) || '[]');
-          list.push({
-            id: task.dataset.id,
-            name: task.dataset.name,
-            time: parseInt(task.dataset.time||0,10),
-            color: rgbToHex(task.style.backgroundColor),
-            deadline: task.dataset.deadline || '',
-            completedAt: new Date().toLocaleString()
-          });
-          localStorage.setItem(COMPLETED_KEY, JSON.stringify(list));
+            const list = JSON.parse(localStorage.getItem(COMPLETED_KEY) || '[]');
+            list.push({
+                id: task.dataset.id,
+                name: task.dataset.name,
+                time: parseInt(task.dataset.time || 0, 10),
+                color: rgbToHex(task.style.backgroundColor),
+                deadline: task.dataset.deadline || '',
+                completedAt: new Date().toLocaleString()
+            });
+            localStorage.setItem(COMPLETED_KEY, JSON.stringify(list));
         }
         function renderCompletedTasks() {
-          completedTaskList.innerHTML = '';
-          const list = JSON.parse(localStorage.getItem(COMPLETED_KEY) || '[]');
-          if (list.length === 0) { completedTaskList.innerHTML = '<p>完了タスクはありません。</p>'; return; }
-          list.forEach(t => {
-            const div = document.createElement('div');
-            div.className = 'completed-item';
-            div.textContent = `${t.name}（${formatTime(t.time)}） 期限:${t.deadline || 'なし'} 完了:${t.completedAt}`;
-            div.style.backgroundColor = t.color;
-            completedTaskList.appendChild(div);
-          });
+            completedTaskList.innerHTML = '';
+            const list = JSON.parse(localStorage.getItem(COMPLETED_KEY) || '[]');
+            if (list.length === 0) { completedTaskList.innerHTML = '<p>完了タスクはありません。</p>'; return; }
+            list.forEach(t => {
+                const div = document.createElement('div');
+                div.className = 'completed-item';
+                div.textContent = `${t.name}（${formatTime(t.time)}） 期限:${t.deadline || 'なし'} 完了:${t.completedAt}`;
+                div.style.backgroundColor = t.color;
+                completedTaskList.appendChild(div);
+            });
         }
-    
+
         /* ====== 選択制御 ====== */
         function selectTask(task) {
-          const id = task.dataset.id;
-          if (!selectedTasks.has(task)) {
-            task.classList.add('selected');
-            selectedTasks.add(task);
-          } else {
-            task.classList.remove('selected');
-            selectedTasks.delete(task);
-          }
-          document.querySelectorAll('.task-list-item').forEach(item => {
-            if (item.dataset.id === id) {
-              selectedTasks.has(task) ? item.classList.add('selected') : item.classList.remove('selected');
+            const id = task.dataset.id;
+            if (!selectedTasks.has(task)) {
+                task.classList.add('selected');
+                selectedTasks.add(task);
+            } else {
+                task.classList.remove('selected');
+                selectedTasks.delete(task);
             }
-          });
-          deleteTaskBtn.disabled = selectedTasks.size === 0;
-          deselectTaskBtn.disabled = selectedTasks.size === 0;
-          editTaskBtn.disabled = selectedTasks.size !== 1;
-          completeTaskBtn.disabled = selectedTasks.size === 0;
-          updateSelectedTime();
+            document.querySelectorAll('.task-list-item').forEach(item => {
+                if (item.dataset.id === id) {
+                    selectedTasks.has(task) ? item.classList.add('selected') : item.classList.remove('selected');
+                }
+            });
+            deleteTaskBtn.disabled = selectedTasks.size === 0;
+            deselectTaskBtn.disabled = selectedTasks.size === 0;
+            editTaskBtn.disabled = selectedTasks.size !== 1;
+            completeTaskBtn.disabled = selectedTasks.size === 0;
+            updateSelectedTime();
         }
         function clearSelection() {
-          selectedTasks.forEach(t => t.classList.remove('selected'));
-          selectedTasks.clear();
-          document.querySelectorAll('.task-list-item').forEach(i => i.classList.remove('selected'));
-          deleteTaskBtn.disabled = true;
-          deselectTaskBtn.disabled = true;
-          editTaskBtn.disabled = true;
-          completeTaskBtn.disabled = true;
-          updateSelectedTime();
+            selectedTasks.forEach(t => t.classList.remove('selected'));
+            selectedTasks.clear();
+            document.querySelectorAll('.task-list-item').forEach(i => i.classList.remove('selected'));
+            deleteTaskBtn.disabled = true;
+            deselectTaskBtn.disabled = true;
+            editTaskBtn.disabled = true;
+            completeTaskBtn.disabled = true;
+            updateSelectedTime();
         }
-    
+
         /* ====== タスクリスト更新 ====== */
         function updateTaskListOrder(orderIds = null) {
-          let tasks = Array.from(document.querySelectorAll('.task'));
-          if (!orderIds) {
-            tasks.sort((a,b) => {
-              const ay = parseInt(a.dataset.y||0,10), ax = parseInt(a.dataset.x||0,10);
-              const by = parseInt(b.dataset.y||0,10), bx = parseInt(b.dataset.x||0,10);
-              if (by !== ay) return by - ay;
-              return bx - ax;
+            let tasks = Array.from(document.querySelectorAll('.task'));
+            if (!orderIds) {
+                tasks.sort((a, b) => {
+                    const ay = parseInt(a.dataset.y || 0, 10), ax = parseInt(a.dataset.x || 0, 10);
+                    const by = parseInt(b.dataset.y || 0, 10), bx = parseInt(b.dataset.x || 0, 10);
+                    if (by !== ay) return by - ay;
+                    return bx - ax;
+                });
+            } else {
+                const idx = new Map(orderIds.map((id, i) => [id, i]));
+                tasks.sort((a, b) => (idx.get(a.dataset.id) ?? 9999) - (idx.get(b.dataset.id) ?? 9999));
+            }
+            taskList.innerHTML = '';
+            tasks.forEach(task => {
+                const listItem = document.createElement('div');
+                listItem.className = 'task-list-item';
+                listItem.dataset.id = task.dataset.id;
+                listItem.textContent = `${task.dataset.name}（${formatTime(parseInt(task.dataset.time || 0, 10))}）` + (task.dataset.deadline ? ` 期限:${task.dataset.deadline}` : '');
+                listItem.style.backgroundColor = task.style.backgroundColor;
+                if (selectedTasks.has(task)) listItem.classList.add('selected');
+
+                // 並べ替え用 Drag&Drop（PC）
+                listItem.draggable = true;
+                listItem.addEventListener('dragstart', e => { e.dataTransfer.setData('text/plain', task.dataset.id); });
+                listItem.addEventListener('dragover', e => e.preventDefault());
+                listItem.addEventListener('drop', e => {
+                    e.preventDefault();
+                    const draggedId = e.dataTransfer.getData('text/plain');
+                    const items = Array.from(taskList.children).map(ch => ch.dataset.id);
+                    const from = items.indexOf(draggedId);
+                    const to = items.indexOf(listItem.dataset.id);
+                    if (from === -1 || to === -1) return;
+                    items.splice(to, 0, items.splice(from, 1)[0]);
+                    updateTaskListOrder(items);
+                    saveOrderToLocalStorage(items);
+                });
+
+                listItem.addEventListener('click', () => selectTask(task));
+                taskList.appendChild(listItem);
             });
-          } else {
-            const idx = new Map(orderIds.map((id,i)=>[id,i]));
-            tasks.sort((a,b)=> (idx.get(a.dataset.id) ?? 9999) - (idx.get(b.dataset.id) ?? 9999));
-          }
-          taskList.innerHTML = '';
-          tasks.forEach(task => {
-            const listItem = document.createElement('div');
-            listItem.className = 'task-list-item';
-            listItem.dataset.id = task.dataset.id;
-            listItem.textContent = `${task.dataset.name}（${formatTime(parseInt(task.dataset.time||0,10))}）` + (task.dataset.deadline ? ` 期限:${task.dataset.deadline}` : '');
-            listItem.style.backgroundColor = task.style.backgroundColor;
-            if (selectedTasks.has(task)) listItem.classList.add('selected');
-    
-            // 並べ替え用 Drag&Drop（PC）
-            listItem.draggable = true;
-            listItem.addEventListener('dragstart', e => { e.dataTransfer.setData('text/plain', task.dataset.id); });
-            listItem.addEventListener('dragover', e => e.preventDefault());
-            listItem.addEventListener('drop', e => {
-              e.preventDefault();
-              const draggedId = e.dataTransfer.getData('text/plain');
-              const items = Array.from(taskList.children).map(ch => ch.dataset.id);
-              const from = items.indexOf(draggedId);
-              const to = items.indexOf(listItem.dataset.id);
-              if (from === -1 || to === -1) return;
-              items.splice(to, 0, items.splice(from, 1)[0]);
-              updateTaskListOrder(items);
-              saveOrderToLocalStorage(items);
-            });
-    
-            listItem.addEventListener('click', () => selectTask(task));
-            taskList.appendChild(listItem);
-          });
         }
-    
+
         /* ====== タスク描画 / 作成 ====== */
         function updateTaskCoord(task) {
-          const leftPx = parseFloat(task.style.left || 0);
-          const topPx = parseFloat(task.style.top || 0);
-          const rect = task.getBoundingClientRect();
-          const halfW = rect.width / 2;
-          const halfH = rect.height / 2;
-          const centerX = leftPx + halfW;
-          const centerY = topPx + halfH;
-          const coord = pxToCoord(centerX, centerY);
-          task.dataset.x = coord.x;
-          task.dataset.y = coord.y;
-          //innerText（多行は改行）
-          task.textContent = labelText(task);
-          updateTaskListOrder();
-        }
-    
-        function createTask(name, time, color, deadline, x=50, y=50, id=null) {
-          const task = document.createElement('div');
-          task.className = 'task';
-          task.dataset.id = id || generateId();
-          task.dataset.name = name;
-          task.dataset.time = String(time || 0);
-          task.dataset.deadline = deadline || '';
-          task.style.backgroundColor = color || '#4a90e2';
-    
-          task.addEventListener('click', e => { e.stopPropagation(); selectTask(task); });
-    
-          makeDraggable(task);
-    
-          matrix.appendChild(task);
-    
-          // 位置セット
-          const px = coordToPx(x, y);
-          
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-              const halfW = task.offsetWidth / 2;
-              const halfH = task.offsetHeight / 2;
-              task.style.left = (px.left - halfW) + 'px';
-              task.style.top = (px.top - halfH) + 'px';
-              updateTaskCoord(task);
-              updateTaskListOrder(getOrderFromLocalStorage());
-              updateTotalTime();
-              saveTasksToLocalStorage();
-            });
-          });
-        }
-    
-        /* ====== ドラッグ（pointer events：マウス/タッチ共通） ====== */
-        function makeDraggable(task) {
-          let offsetX = 0, offsetY = 0, pointerId = null;
-    
-          function onPointerDown(e) {
-            // マウスの左クリック、またはタッチ/ペンで始める
-            if (e.pointerType === 'mouse' && e.button !== 0) return;
-            e.preventDefault();
-            pointerId = e.pointerId;
-            draggingTask = task;
-            isDragging = true;
-            task.setPointerCapture(pointerId);
-    
-            // 要素中心からの差分を計算
-            const rect = task.getBoundingClientRect();
-            offsetX = e.clientX - (rect.left + rect.width/2);
-            offsetY = e.clientY - (rect.top + rect.height/2);
-            task.style.cursor = 'grabbing';
-          }
-    
-          function onPointerMove(e) {
-            if (!isDragging || draggingTask !== task) return;
-            e.preventDefault(); // ここでブラウザのスクロールや選択を防ぐ
-            const matrixRect = matrix.getBoundingClientRect();
-            let x = e.clientX - matrixRect.left - offsetX;
-            let y = e.clientY - matrixRect.top - offsetY;
-            // 中心位置
-            const halfW = task.offsetWidth / 2;
-            const halfH = task.offsetHeight / 2;
-            // clamp so it doesn't go far outside
-            x = Math.max(-halfW, Math.min(matrixRect.width - halfW, x));
-            y = Math.max(-halfH, Math.min(matrixRect.height - halfH, y));
-            // Convert to nearest 5 unit grid in coordinates
-            const coord = pxToCoord(x + halfW, y + halfH);
-            coord.x = Math.round(coord.x / 5) * 5;
-            coord.y = Math.round(coord.y / 5) * 5;
-            const pos = coordToPx(coord.x, coord.y);
-            task.style.left = (pos.left - halfW) + 'px';
-            task.style.top = (pos.top - halfH) + 'px';
-            updateTaskCoord(task);
-            saveTasksToLocalStorage();
-          }
-    
-          function onPointerUp(e) {
-            if (pointerId !== null) {
-              try { task.releasePointerCapture(pointerId); } catch(_) {}
-            }
-            isDragging = false;
-            draggingTask = null;
-            task.style.cursor = 'grab';
-            pointerId = null;
-          }
-    
-          task.addEventListener('pointerdown', onPointerDown);
-          document.addEventListener('pointermove', onPointerMove, { passive: false });
-          document.addEventListener('pointerup', onPointerUp);
-          // pointercancel および document-level cleanup
-          document.addEventListener('pointercancel', onPointerUp);
-        }
-    
-        /* ====== スワイプ時のページスクロール制御 ======
-           - ドラッグ中（isDragging）に限り、document の touchmove を preventDefault してページスクロールを止める
-           - ただし、taskList や完了リストの上でのスクロールは許可する
-           - axisCanvas / .task 上のタッチはドラッグ目的なのでページスクロールを防ぐ
-        */
-        document.addEventListener('touchmove', function(e){
-          if (!isDragging) return; // ドラッグ中のみ介入
-          // もしタッチターゲットが taskList の内部なら許可
-          const t = e.target;
-          if (t.closest && (t.closest('#taskList') || t.closest('#completedTaskList'))) {
-            return; // リストのスクロールは許可
-          }
-          // それ以外（キャンバスやタスク上のドラッグ）は preventDefault
-          e.preventDefault();
-        }, { passive: false });
-    
-        /* ====== イベント：ボタン操作など ====== */
-        addTaskBtn.addEventListener('click', () => {
-          editTarget = null;
-          modalTitle.textContent = 'タスク追加';
-          modalAddBtn.textContent = '追加';
-          modal.style.display = 'flex';
-          modalTaskName.value = '';
-          modalTaskHours.value = 0;
-          modalTaskMinutes.value = 30;
-          modalTaskDeadline.value = '';
-          modalTaskColor.value = '#4a90e2';
-          modalTaskName.focus();
-        });
-    
-        editTaskBtn.addEventListener('click', () => {
-          if (selectedTasks.size !== 1) return;
-          editTarget = [...selectedTasks][0];
-          modalTitle.textContent = 'タスク編集';
-          modalAddBtn.textContent = '更新';
-          modalTaskName.value = editTarget.dataset.name;
-          const total = parseInt(editTarget.dataset.time||0,10);
-          modalTaskHours.value = Math.floor(total / 60);
-          modalTaskMinutes.value = total % 60;
-          modalTaskDeadline.value = editTarget.dataset.deadline || '';
-          modalTaskColor.value = rgbToHex(editTarget.style.backgroundColor) || '#4a90e2';
-          modal.style.display = 'flex';
-        });
-    
-        modalAddBtn.addEventListener('click', () => {
-          const name = modalTaskName.value.trim();
-          const hours = parseInt(modalTaskHours.value,10) || 0;
-          const minutes = parseInt(modalTaskMinutes.value,10) || 0;
-          const time = hours * 60 + minutes;
-          const deadline = modalTaskDeadline.value;
-          const color = modalTaskColor.value;
-          if (!name || isNaN(time) || time <= 0) return;
-          if (editTarget) {
-            editTarget.dataset.name = name;
-            editTarget.dataset.time = String(time);
-            editTarget.dataset.deadline = deadline || '';
-            editTarget.style.backgroundColor = color;
-            editTarget.textContent = labelText(editTarget);
-            updateTaskListOrder(getOrderFromLocalStorage());
-            updateTotalTime();
-            saveTasksToLocalStorage();
-          } else {
-            createTask(name, time, color, deadline);
-          }
-          modal.style.display = 'none';
-        });
-        modalCancelBtn.addEventListener('click', () => { modal.style.display = 'none'; });
-    
-        deleteTaskBtn.addEventListener('click', () => {
-          const idsToRemove = [];
-          selectedTasks.forEach(task => {
-            idsToRemove.push(task.dataset.id);
-            if (task.parentNode) task.parentNode.removeChild(task);
-          });
-          clearSelection();
-          updateTaskListOrder(getOrderFromLocalStorage()?.filter(id => !idsToRemove.includes(id)) || null);
-          updateTotalTime();
-          const order = getOrderFromLocalStorage();
-          if (order) saveOrderToLocalStorage(order.filter(id => !idsToRemove.includes(id)));
-          saveTasksToLocalStorage();
-        });
-    
-        deselectTaskBtn.addEventListener('click', clearSelection);
-        document.addEventListener('click', (e) => {
-          // キャンバス外クリックで選択クリア
-          if (!e.target.closest('.task') && !e.target.closest('.task-list-item')) clearSelection();
-        });
-    
-        completeTaskBtn.addEventListener('click', () => {
-          if (selectedTasks.size === 0) return;
-          selectedTasks.forEach(task => {
-            saveCompletedTask(task);
-            if (task.parentNode) task.parentNode.removeChild(task);
-          });
-          clearSelection();
-          updateTaskListOrder();
-          updateTotalTime();
-          saveTasksToLocalStorage();
-        });
-    
-        toggleCompletedBtn.addEventListener('click', () => {
-          if (completedTaskList.style.display === 'block') {
-            completedTaskList.style.display = 'none';
-            taskList.style.display = 'block';
-            toggleCompletedBtn.textContent = '完了タスク一覧';
-          } else {
-            renderCompletedTasks();
-            completedTaskList.style.display = 'block';
-            taskList.style.display = 'none';
-            toggleCompletedBtn.textContent = 'タスク一覧に戻る';
-          }
-        });
-    
-        recommendBtn.addEventListener('click', () => {
-          localStorage.removeItem(ORDER_KEY);
-          updateTaskListOrder();
-        });
-    
-        /* ====== 日次シフト（yを +2） ====== */
-        function applyDailyShiftIfNeeded() {
-          const today = todayStr();
-          const last = localStorage.getItem(SHIFT_KEY);
-          if (!last) { localStorage.setItem(SHIFT_KEY, today); return; }
-          const diff = daysBetween(last, today);
-          if (diff <= 0) return;
-          const inc = 2 * diff;
-          setCanvasSize();
-          const tasks = document.querySelectorAll('.task');
-          if (tasks.length === 0) return;
-          tasks.forEach(task => {
-            const x = parseInt(task.dataset.x||50,10);
-            let y = parseInt(task.dataset.y||50,10);
-            y = Math.min(COORD_MAX, y + inc);
-            task.dataset.y = y;
-            const px = coordToPx(x, y);
+            const leftPx = parseFloat(task.style.left || 0);
+            const topPx = parseFloat(task.style.top || 0);
             const rect = task.getBoundingClientRect();
             const halfW = rect.width / 2;
             const halfH = rect.height / 2;
-            task.style.left = (px.left - halfW) + 'px';
-            task.style.top = (px.top - halfH) + 'px';
+            const centerX = leftPx + halfW;
+            const centerY = topPx + halfH;
+            const coord = pxToCoord(centerX, centerY);
+            task.dataset.x = coord.x;
+            task.dataset.y = coord.y;
+            //innerText（多行は改行）
             task.textContent = labelText(task);
-          });
-          updateTaskListOrder(getOrderFromLocalStorage());
-          saveTasksToLocalStorage();
-          localStorage.setItem(SHIFT_KEY, today);
+            updateTaskListOrder();
         }
-        let currentDateString = todayStr();
-        setInterval(() => {
-          const nowStr = todayStr();
-          if (nowStr !== currentDateString) {
-            currentDateString = nowStr;
-            applyDailyShiftIfNeeded();
-          }
-        }, 60 * 1000);
-    
+
+        function createTask(name, time, color, deadline, x = 50, y = 50, id = null) {
+            const task = document.createElement('div');
+            task.className = 'task';
+            task.dataset.id = id || generateId();
+            task.dataset.name = name;
+            task.dataset.time = String(time || 0);
+            task.dataset.deadline = deadline || '';
+            task.dataset.x = x;
+            task.dataset.y = y;
+            task.style.backgroundColor = color || '#4a90e2';
+
+            task.addEventListener('click', e => { e.stopPropagation(); selectTask(task); });
+
+            makeDraggable(task);
+
+            matrix.appendChild(task);
+
+            const px = coordToPx(x, y);
+
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    const halfW = task.offsetWidth / 2;
+                    const halfH = task.offsetHeight / 2;
+                    task.style.left = (px.left - halfW) + 'px';
+                    task.style.top = (px.top - halfH) + 'px';
+
+                    updateTaskListOrder(getOrderFromLocalStorage());
+                    updateTotalTime();
+                    saveTasksToLocalStorage();
+                });
+            });
+        }
+
+        /* ====== ドラッグ（pointer events：マウス/タッチ共通） ====== */
+        function makeDraggable(task) {
+            let offsetX = 0, offsetY = 0, pointerId = null;
+
+            function onPointerDown(e) {
+                // マウスの左クリック、またはタッチで始める
+                if (e.pointerType === 'mouse' && e.button !== 0) return;
+                e.preventDefault();
+                pointerId = e.pointerId;
+                draggingTask = task;
+                isDragging = true;
+                task.setPointerCapture(pointerId);
+
+                // 要素中心からの差分を計算
+                const rect = task.getBoundingClientRect();
+                offsetX = e.clientX - (rect.left + rect.width / 2);
+                offsetY = e.clientY - (rect.top + rect.height / 2);
+                task.style.cursor = 'grabbing';
+            }
+
+            function onPointerMove(e) {
+                if (!isDragging || draggingTask !== task) return;
+                e.preventDefault(); // ブラウザのスクロールや選択を防ぐ
+                const matrixRect = matrix.getBoundingClientRect();
+                let x = e.clientX - matrixRect.left - offsetX;
+                let y = e.clientY - matrixRect.top - offsetY;
+                // 中心位置
+                const halfW = task.offsetWidth / 2;
+                const halfH = task.offsetHeight / 2;
+                x = Math.max(-halfW, Math.min(matrixRect.width - halfW, x));
+                y = Math.max(-halfH, Math.min(matrixRect.height - halfH, y));
+                const coord = pxToCoord(x + halfW, y + halfH);
+                coord.x = Math.round(coord.x / 5) * 5;
+                coord.y = Math.round(coord.y / 5) * 5;
+                const pos = coordToPx(coord.x, coord.y);
+                task.style.left = (pos.left - halfW) + 'px';
+                task.style.top = (pos.top - halfH) + 'px';
+                updateTaskCoord(task);
+                saveTasksToLocalStorage();
+            }
+
+            function onPointerUp(e) {
+                if (pointerId !== null) {
+                    try { task.releasePointerCapture(pointerId); } catch (_) { }
+                }
+                isDragging = false;
+                draggingTask = null;
+                task.style.cursor = 'grab';
+                pointerId = null;
+            }
+
+            task.addEventListener('pointerdown', onPointerDown);
+            document.addEventListener('pointermove', onPointerMove, { passive: false });
+            document.addEventListener('pointerup', onPointerUp);
+            document.addEventListener('pointercancel', onPointerUp);
+        }
+
+        /* ====== スワイプ時のページスクロール制御 ====== */
+        document.addEventListener('touchmove', function (e) {
+            if (!isDragging) return; // ドラッグ中のみ介入
+            const t = e.target;
+            if (t.closest && (t.closest('#taskList') || t.closest('#completedTaskList'))) {
+                return; // リストのスクロールは許可
+            }
+            e.preventDefault();
+        }, { passive: false });
+
+        /* ====== イベント：ボタン操作など ====== */
+        addTaskBtn.addEventListener('click', () => {
+            editTarget = null;
+            modalTitle.textContent = 'タスク追加';
+            modalAddBtn.textContent = '追加';
+            modal.style.display = 'flex';
+            modalTaskName.value = '';
+            modalTaskHours.value = 0;
+            modalTaskMinutes.value = 30;
+            modalTaskDeadline.value = '';
+            modalTaskColor.value = '#4a90e2';
+            modalTaskName.focus();
+        });
+
+        editTaskBtn.addEventListener('click', () => {
+            if (selectedTasks.size !== 1) return;
+            editTarget = [...selectedTasks][0];
+            modalTitle.textContent = 'タスク編集';
+            modalAddBtn.textContent = '更新';
+            modalTaskName.value = editTarget.dataset.name;
+            const total = parseInt(editTarget.dataset.time || 0, 10);
+            modalTaskHours.value = Math.floor(total / 60);
+            modalTaskMinutes.value = total % 60;
+            modalTaskDeadline.value = editTarget.dataset.deadline || '';
+            modalTaskColor.value = rgbToHex(editTarget.style.backgroundColor) || '#4a90e2';
+            modal.style.display = 'flex';
+        });
+
+        modalAddBtn.addEventListener('click', () => {
+            const name = modalTaskName.value.trim();
+            const hours = parseInt(modalTaskHours.value, 10) || 0;
+            const minutes = parseInt(modalTaskMinutes.value, 10) || 0;
+            const time = hours * 60 + minutes;
+            const deadline = modalTaskDeadline.value;
+            const color = modalTaskColor.value;
+            if (!name || isNaN(time) || time <= 0) return;
+            if (editTarget) {
+                editTarget.dataset.name = name;
+                editTarget.dataset.time = String(time);
+                editTarget.dataset.deadline = deadline || '';
+                editTarget.style.backgroundColor = color;
+                editTarget.textContent = labelText(editTarget);
+                updateTaskListOrder(getOrderFromLocalStorage());
+                updateTotalTime();
+                saveTasksToLocalStorage();
+            } else {
+                createTask(name, time, color, deadline);
+            }
+            modal.style.display = 'none';
+        });
+        modalCancelBtn.addEventListener('click', () => { modal.style.display = 'none'; });
+
+        deleteTaskBtn.addEventListener('click', () => {
+            const idsToRemove = [];
+            selectedTasks.forEach(task => {
+                idsToRemove.push(task.dataset.id);
+                if (task.parentNode) task.parentNode.removeChild(task);
+            });
+            clearSelection();
+            updateTaskListOrder(getOrderFromLocalStorage()?.filter(id => !idsToRemove.includes(id)) || null);
+            updateTotalTime();
+            const order = getOrderFromLocalStorage();
+            if (order) saveOrderToLocalStorage(order.filter(id => !idsToRemove.includes(id)));
+            saveTasksToLocalStorage();
+        });
+
+        deselectTaskBtn.addEventListener('click', clearSelection);
+        document.addEventListener('click', (e) => {
+            // キャンバス外クリックで選択クリア
+            if (!e.target.closest('.task') && !e.target.closest('.task-list-item')) clearSelection();
+        });
+
+        completeTaskBtn.addEventListener('click', () => {
+            if (selectedTasks.size === 0) return;
+            selectedTasks.forEach(task => {
+                saveCompletedTask(task);
+                if (task.parentNode) task.parentNode.removeChild(task);
+            });
+            clearSelection();
+            updateTaskListOrder();
+            updateTotalTime();
+            saveTasksToLocalStorage();
+        });
+
+        toggleCompletedBtn.addEventListener('click', () => {
+            if (completedTaskList.style.display === 'block') {
+                completedTaskList.style.display = 'none';
+                taskList.style.display = 'block';
+                toggleCompletedBtn.textContent = '完了タスク一覧';
+            } else {
+                renderCompletedTasks();
+                completedTaskList.style.display = 'block';
+                taskList.style.display = 'none';
+                toggleCompletedBtn.textContent = 'タスク一覧に戻る';
+            }
+        });
+
+        recommendBtn.addEventListener('click', () => {
+            localStorage.removeItem(ORDER_KEY);
+            updateTaskListOrder();
+        });
+
+        /* ====== 日次シフト ====== */
+        function applyDeadlineShift() {
+            const last = localStorage.getItem(SHIFT_KEY);
+            const today = todayStr();
+            if (last === today) return;  // 同じ日なら実行しない
+
+            // shift: 1日経過 → y + 5（上昇）
+            const SHIFT_PER_DAY = 5;
+
+            const tasks = document.querySelectorAll('.task');
+            tasks.forEach(t => {
+                const deadline = t.dataset.deadline;
+                if (!deadline) return;
+
+                const diff = daysBetween(today, deadline); // 期限までの残り日数
+                const savedDiff = daysBetween(last || today, deadline);
+                const delta = savedDiff - diff;
+
+                // 日数の変化分だけ緊急度を上げる
+                if (delta !== 0) {
+                    let y = parseInt(t.dataset.y || 50, 10);
+                    y += delta * SHIFT_PER_DAY;
+                    y = Math.min(100, Math.max(0, y));
+                    t.dataset.y = y;
+
+                    const pos = coordToPx(t.dataset.x, y);
+                    const halfW = t.offsetWidth / 2;
+                    const halfH = t.offsetHeight / 2;
+                    t.style.left = (pos.left - halfW) + 'px';
+                    t.style.top = (pos.top - halfH) + 'px';
+                }
+            });
+
+            localStorage.setItem(SHIFT_KEY, today);
+            saveTasksToLocalStorage();
+        }
+
         /* ====== 初期化/リサイズ ====== */
         window.addEventListener('resize', () => {
-          setCanvasSize();
+            setCanvasSize();
         });
-    
+
         // 初回設定
         document.addEventListener('DOMContentLoaded', () => {
-          setCanvasSize();
-          loadTasksFromLocalStorage();
-          applyDailyShiftIfNeeded();
-          renderCompletedTasks();
+            setCanvasSize();
+            loadTasksFromLocalStorage();
+            applyDailyShiftIfNeeded();
+            applyDeadlineShift();
+            renderCompletedTasks();
         });
-    
+
         function getOrderFromLocalStorage() { return (localStorage.getItem(ORDER_KEY) ? JSON.parse(localStorage.getItem(ORDER_KEY)) : null); }
 
-      </script>
-    </body>
+    </script>
+</body>
 </html>
+
 
 
 
